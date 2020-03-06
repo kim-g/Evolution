@@ -20,9 +20,42 @@ namespace Evolution
     /// </summary>
     public partial class MainWindow : Window
     {
+        System.Windows.Threading.DispatcherTimer MoveTimer;
+
+        Biome MainBiome;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            MainBiome = new Biome(Main);
+            MainBiome.Add(new Species()
+            {
+                Energy = 10,
+                MaxSpeed = 2,
+                Margin = new Thickness(0),
+                Width = 10,
+                Height = 10,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top
+            });
+
+
+            MoveTimer = new System.Windows.Threading.DispatcherTimer();
+            MoveTimer.Tick += new EventHandler(MoveTimerTick);
+            MoveTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
+
+            MoveTimer.Start();
+
+        }
+
+        private void MoveTimerTick(object sender, EventArgs e)
+        {
+            foreach (Species Ind in MainBiome.Individuals)
+                Ind.Step();
+
+            MainBiome.AddAll();
+            MainBiome.RemoveAll();
         }
     }
 }

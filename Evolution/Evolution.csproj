@@ -53,6 +53,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Biome.cs" />
     <Compile Include="Species.xaml.cs">
       <DependentUpon>Species.xaml</DependentUpon>
     </Compile>
