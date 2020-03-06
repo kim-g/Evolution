@@ -51,11 +51,15 @@ namespace Evolution
 
         private void MoveTimerTick(object sender, EventArgs e)
         {
+            DateTime StartTime = DateTime.Now;
+
             foreach (Species Ind in MainBiome.Individuals)
                 Ind.Step();
 
             MainBiome.AddAll();
             MainBiome.RemoveAll();
+
+            Status.Content = DateTime.Now.Subtract(StartTime).TotalMilliseconds.ToString();
         }
     }
 }

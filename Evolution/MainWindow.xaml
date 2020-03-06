@@ -7,6 +7,6 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="341.379" Width="341.536">
     <Grid x:Name="Main">
-        
+        <Label x:Name="Status" VerticalAlignment="Bottom" />
     </Grid>
 </Window>
