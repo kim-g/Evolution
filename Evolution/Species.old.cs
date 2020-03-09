@@ -175,9 +175,9 @@ namespace Evolution
         {
             InitializeComponent();
 
-            for (int i = 0; i < DNA_Count - 10; i++)
+            for (int i = 0; i < DNA_Count - 3; i++)
                 DNA[i] = 0x10;
-            for (int i = DNA_Count - 10; i < DNA_Count; i++)
+            for (int i = DNA_Count - 3; i < DNA_Count; i++)
                 DNA[i] = 0x01;
         }
 
