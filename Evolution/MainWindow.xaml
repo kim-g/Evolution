@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Evolution"
         mc:Ignorable="d"
-        Title="MainWindow" Height="341.379" Width="341.536">
+        Title="MainWindow" SizeToContent="WidthAndHeight">
     <Grid x:Name="Main">
+        <local:Biome x:Name="MainBiome" Width="800" Height="400"/>
         <Label x:Name="Status" VerticalAlignment="Bottom" />
     </Grid>
 </Window>

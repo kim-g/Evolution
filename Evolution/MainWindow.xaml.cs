@@ -22,22 +22,16 @@ namespace Evolution
     {
         System.Windows.Threading.DispatcherTimer MoveTimer;
 
-        Biome MainBiome;
-
         public MainWindow()
         {
             InitializeComponent();
 
-            MainBiome = new Biome(Main);
+            MainBiome.Initialize(800, 400);
+
             MainBiome.Add(new Species()
             {
                 Energy = 10,
-                MaxSpeed = 2,
-                Margin = new Thickness(0),
-                Width = 10,
-                Height = 10,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top
+                MaxSpeed = 2
             });
 
 
@@ -53,11 +47,8 @@ namespace Evolution
         {
             DateTime StartTime = DateTime.Now;
 
-            foreach (Species Ind in MainBiome.Individuals)
-                Ind.Step();
-
-            MainBiome.AddAll();
-            MainBiome.RemoveAll();
+            MainBiome.Step();
+            MainBiome.Show();
 
             Status.Content = DateTime.Now.Subtract(StartTime).TotalMilliseconds.ToString();
         }
