@@ -90,6 +90,8 @@ namespace Evolution
         /// </summary>
         public double ElementSize { get; set; } = 10;
 
+        public Random RandomSeeds = new Random();
+
         #endregion
 
         #region Конструкторы
@@ -166,42 +168,6 @@ namespace Evolution
         #endregion
 
         #region Внутренние методы
-
-        /// <summary>
-        /// Сдвигает точку в указанном направлении на одно деление
-        /// </summary>
-        /// <param name="From">Начальная точка</param>
-        /// <param name="Dir">Направление</param>
-        /// <returns></returns>
-        protected IntPoint MoveOne(IntPoint From, int Dir)
-        {
-            IntPoint Out = new IntPoint()
-            {
-                X = From.X + Directions[Dir, 0],
-                Y = From.Y + Directions[Dir, 1]
-            };
-
-            if (Out.X < 0) Out.X += TableWidth;
-            if (Out.X >= TableWidth) Out.X -= TableWidth;
-
-            return Out;
-        }
-
-        /// <summary>
-        /// Полностью обновить визуальное отображение биома.
-        /// </summary>
-        protected void ShowAll()
-        {
-            for (int i = 0; i < TableWidth; i++)
-                for (int j = 0; j < TableHeight; j++)
-                {
-                    if (Map[i, j] == null) ShowNull(Rectangles[i, j]);
-                    else Colorize(Rectangles[i, j], Map[i, j].Energy);
-                    Changed[i, j] = false;
-                    if (Map[i, j] != null) Map[i, j].Changed = false;
-                }
-        }
-
 
         /// <summary>
         /// Убирает квадрат.
@@ -305,7 +271,7 @@ namespace Evolution
                 IntPoint NewDir = MoveOne(El.Position, i);
 
                 if (NewDir.Y < 0 || NewDir.Y > TableHeight) Out[i] = false;
-                else Out[i] = Map[NewDir.X, NewDir.Y] == null;
+                else Out[i] = Free(NewDir);
                 
             }
 
@@ -334,9 +300,13 @@ namespace Evolution
                     if (Changed[i, j])
                     {
                         if (Map[i, j] == null) ShowNull(Rectangles[i, j]);
-                        else Colorize(Rectangles[i, j], Map[i, j].Energy);
+                        else
+                        {
+                            Colorize(Rectangles[i, j], Map[i, j].Energy);
+                            Map[i, j].Changed = false;
+                        }
                         Changed[i, j] = false;
-                        Map[i, j].Changed = false;
+                        
                     }
 
             // Отображаем изменённые объекты
@@ -346,6 +316,103 @@ namespace Evolution
                 Changed[El.Left, El.Top] = false;
                 El.Changed = false;
             }
+        }
+
+        /// <summary>
+        /// Полностью обновить визуальное отображение биома.
+        /// </summary>
+        public void ShowAll()
+        {
+            for (int i = 0; i < TableWidth; i++)
+                for (int j = 0; j < TableHeight; j++)
+                {
+                    if (Map[i, j] == null) ShowNull(Rectangles[i, j]);
+                    else Colorize(Rectangles[i, j], Map[i, j].Energy);
+                    Changed[i, j] = false;
+                    if (Map[i, j] != null) Map[i, j].Changed = false;
+                }
+        }
+
+        /// <summary>
+        /// Отображает ближайшие к особи цели
+        /// </summary>
+        /// <param name="El">Особь</param>
+        /// <param name="Distance">Расстояние</param>
+        /// <returns></returns>
+        public List<Species> Near(Species El, int Distance = 1)
+        {
+            List<Species> Out = new List<Species>();
+            if (Distance < 1) return Out;
+
+            for (int i = 0; i < 8; i++)
+            {
+                IntPoint NewPlace = MoveOne(El.Position, i);
+                if (NewPlace.Y < 0 || NewPlace.Y >= TableHeight) continue;
+
+                if (Map[NewPlace.X, NewPlace.Y] != null)
+                    Out.Add(Map[NewPlace.X, NewPlace.Y]);
+            }
+
+            return Out;
+        }
+
+        /// <summary>
+        /// Обозначить положение как изменённое
+        /// </summary>
+        /// <param name="Position"></param>
+        public void Change(IntPoint Position)
+        {
+            Changed[Position.X, Position.Y] = true;
+        }
+
+        /// <summary>
+        /// Показать, является ли клетка пустой
+        /// </summary>
+        /// <param name="Position"></param>
+        /// <returns></returns>
+        public bool Free(IntPoint Position)
+        {
+            if (Position.Y < 0 || Position.Y >= TableHeight) return false;
+            return Map[Position.X, Position.Y] == null;
+        }
+
+        /// <summary>
+        /// Сдвигает точку в указанном направлении на одно деление
+        /// </summary>
+        /// <param name="From">Начальная точка</param>
+        /// <param name="Dir">Направление</param>
+        /// <returns></returns>
+        public IntPoint MoveOne(IntPoint From, int Dir)
+        {
+            IntPoint Out = new IntPoint()
+            {
+                X = From.X + Directions[Dir, 0],
+                Y = From.Y + Directions[Dir, 1]
+            };
+
+            if (Out.X < 0) Out.X += TableWidth;
+            if (Out.X >= TableWidth) Out.X -= TableWidth;
+
+            return Out;
+        }
+
+        /// <summary>
+        /// Переместить особь в новое место
+        /// </summary>
+        /// <param name="El">Особь</param>
+        /// <param name="To">Место</param>
+        public void Move(Species El, IntPoint To)
+        {
+            if (To.Y < 0 || To.Y >= TableHeight) return;
+            if (To.X < 0) To.X += TableWidth;
+            if (To.X >= TableWidth) To.X -= TableWidth;
+            if (Map[To.X, To.Y] != null) return;
+
+            Change(El.Position);
+            Map[El.Position.X, El.Position.Y] = null;
+            El.Position = To;
+            Map[El.Position.X, El.Position.Y] = El;
+            El.Changed = true;
         }
 
         #endregion

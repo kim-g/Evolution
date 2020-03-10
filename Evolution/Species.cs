@@ -18,7 +18,8 @@ namespace Evolution
         #region private параметры
         double energy;
         bool alife = true;
-        Random RND = new Random();
+        bool destroying = false;
+        Random RND;
         int left_speed = 1;
         int top_speed = 0;
         byte[] DNA = new byte[100];
@@ -159,11 +160,13 @@ namespace Evolution
         public IntPoint Position { get => position; set => position = value; }
         #endregion
 
-        public Species()
+        public Species(int RandomSeed)
         {
-            for (int i = 0; i < DNA_Count - 10; i++)
+            RND = new Random(RandomSeed);
+
+            for (int i = 0; i < DNA_Count - 5; i++)
                 DNA[i] = 0x10;
-            for (int i = DNA_Count - 10; i < DNA_Count; i++)
+            for (int i = DNA_Count - 5; i < DNA_Count; i++)
                 DNA[i] = 0x01;
         }
 
@@ -182,8 +185,22 @@ namespace Evolution
         /// </summary>
         protected void Move(byte Direction)
         {
+            MyBiome.Move(this, new IntPoint()
+            {
+                X = Left + Biome.Directions[Direction, 0],
+                Y = Top + Biome.Directions[Direction, 1]
+            });
+        }
+
+        /// <summary>
+        /// Передвинуть особь до добавления в биом.
+        /// </summary>
+        /// <param name="Direction"></param>
+        protected void MoveOutOfBiome(byte Direction)
+        {
             Left += Biome.Directions[Direction, 0];
             Top += Biome.Directions[Direction, 1];
+            Changed = true;
         }
 
         /// <summary>
@@ -192,6 +209,7 @@ namespace Evolution
         private void Die()
         {
             Changed = true;
+            MyBiome.Change(Position);
             alife = false;
         }
 
@@ -200,7 +218,10 @@ namespace Evolution
         /// </summary>
         private void Destroy()
         {
+            destroying = true;
             if (alife) Die();
+            MyBiome.Remove(this);
+            MyBiome.Change(Position);
             Dispose();
         }
 
@@ -236,7 +257,7 @@ namespace Evolution
             Changed = true;
             Energy = (Energy - 1) / 2;
 
-            Species NewSpecies = new Species()
+            Species NewSpecies = new Species(MyBiome.RandomSeeds.Next(int.MaxValue))
             {
                 Energy = Energy,
                 MaxSpeed = MaxSpeed,
@@ -247,7 +268,7 @@ namespace Evolution
             };
 
             NewSpecies.Mutate();
-            NewSpecies.Move(FreeDir[RND.Next(FreeDir.Count)]);
+            NewSpecies.MoveOutOfBiome(FreeDir[RND.Next(FreeDir.Count)]);
 
             MyBiome.Add(NewSpecies);
         }
@@ -257,13 +278,20 @@ namespace Evolution
         /// </summary>
         protected void PhotoSynthesis()
         {
-            Energy += 2 * EnergyPerStep;
+            Energy += 5 * EnergyPerStep;
             Changed = true;
         }
 
         protected void Eat()
         {
+            List<Species> Near = MyBiome.Near(this);
 
+            if (Near.Count == 0) return;
+
+            Species Victim = Near[RND.Next(Near.Count)];
+            Energy += Victim.Energy + 1;
+            Victim.Eaten();
+            Changed = true;
         }
 
         /// <summary>
@@ -297,8 +325,14 @@ namespace Evolution
         /// </summary>
         public void Step()
         {
+            if (destroying) return;
             Energy -= EnergyPerStep;
-            if (!alife) return;
+            if (!alife)
+            {
+                if (MyBiome.Free(MyBiome.MoveOne(Position, 4)))
+                    Move(4);
+                return;
+            }
             Do();
         }
 
@@ -308,6 +342,15 @@ namespace Evolution
         public void Kill()
         {
             Die();
+        }
+
+        /// <summary>
+        /// Особь съедается кем-либо
+        /// </summary>
+        /// <returns></returns>
+        public void Eaten()
+        {
+            Destroy();
         }
 
         /// <summary>

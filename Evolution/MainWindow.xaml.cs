@@ -20,7 +20,7 @@ namespace Evolution
     /// </summary>
     public partial class MainWindow : Window
     {
-        System.Windows.Threading.DispatcherTimer MoveTimer;
+        System.Windows.Threading.DispatcherTimer MoveTimer, UpdateTimer;
 
         public MainWindow()
         {
@@ -28,18 +28,26 @@ namespace Evolution
 
             MainBiome.Initialize(800, 400);
 
-            MainBiome.Add(new Species()
-            {
-                Energy = 10,
-                MaxSpeed = 2
-            });
+            for (int i = 0; i < 80; i++)
+                MainBiome.Add(new Species(MainBiome.RandomSeeds.Next(int.MaxValue))
+                {
+                    Energy = 10,
+                    MaxSpeed = 2,
+                    Position = new IntPoint() { X = i, Y = 0}
+                });
 
 
             MoveTimer = new System.Windows.Threading.DispatcherTimer();
             MoveTimer.Tick += new EventHandler(MoveTimerTick);
-            MoveTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
+            MoveTimer.Interval = new TimeSpan(0, 0, 0, 0, 20);
 
             MoveTimer.Start();
+
+            UpdateTimer = new System.Windows.Threading.DispatcherTimer();
+            UpdateTimer.Tick += new EventHandler(UpdateTimerTick);
+            UpdateTimer.Interval = new TimeSpan(0, 0, 0, 0, 500);
+
+            UpdateTimer.Start();
 
         }
 
@@ -51,6 +59,11 @@ namespace Evolution
             MainBiome.Show();
 
             Status.Content = DateTime.Now.Subtract(StartTime).TotalMilliseconds.ToString();
+        }
+
+        private void UpdateTimerTick(object sender, EventArgs e)
+        {
+            MainBiome.ShowAll();
         }
     }
 }
