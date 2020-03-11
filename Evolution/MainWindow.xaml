@@ -7,7 +7,14 @@
         mc:Ignorable="d"
         Title="MainWindow" SizeToContent="WidthAndHeight">
     <Grid x:Name="Main">
-        <local:Biome x:Name="MainBiome" Width="800" Height="400"/>
-        <Label x:Name="Status" VerticalAlignment="Bottom" />
+        <StackPanel Orientation="Vertical">
+            <local:Biome x:Name="MainBiome" Width="800" Height="400"/>
+            <StackPanel Orientation="Horizontal">
+                <Label x:Name="Status" VerticalAlignment="Top" HorizontalAlignment="Left" Width="300" />
+                <Label x:Name="StepN" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,0,0,0" />
+                <Label x:Name="Count" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,0,0,0" />
+            </StackPanel>
+            <local:Diagram x:Name="CountLine" Height="100"/>
+        </StackPanel>
     </Grid>
 </Window>

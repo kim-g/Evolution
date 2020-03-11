@@ -70,7 +70,14 @@ namespace Evolution
         /// </summary>
         protected Dictionary<double, Brush> EnergyColors = new Dictionary<double, Brush>();
 
+        /// <summary>
+        /// Словарт цветов, обозначающих различные типы питания.
+        /// </summary>
+        protected Dictionary<byte, Brush> NutritionColors = new Dictionary<byte, Brush>();
+
         protected Brush Stroke = new SolidColorBrush(Colors.Black);
+
+        
         #endregion
 
         #region Внешние свойства
@@ -91,6 +98,13 @@ namespace Evolution
         public double ElementSize { get; set; } = 10;
 
         public Random RandomSeeds = new Random();
+
+        /// <summary>
+        /// Количество активных (живых и мёртвых) элементов на карте.
+        /// </summary>
+        public int ElementsCount { get => individuals.Count + ToAdd.Count - ToRemove.Count; }
+
+        public List<double> CountList { get; private set; } = new List<double>();
 
         #endregion
 
@@ -163,6 +177,10 @@ namespace Evolution
             EnergyColors[6] = new SolidColorBrush(Color.FromRgb(0, 255, 0));
             EnergyColors[-1] = new SolidColorBrush(Color.FromRgb(200, 200, 200));
 
+            NutritionColors[0] = new SolidColorBrush(Color.FromRgb(0, 255, 0));
+            NutritionColors[1] = new SolidColorBrush(Color.FromRgb(0, 255, 255));
+            NutritionColors[2] = new SolidColorBrush(Color.FromRgb(0, 0, 255));
+
             ShowAll();
         }
         #endregion
@@ -184,7 +202,7 @@ namespace Evolution
         /// </summary>
         /// <param name="Rect"></param>
         /// <param name="Energy"></param>
-        protected void Colorize(Rectangle Rect, double Energy)
+        protected void ColorizeEnergy(Rectangle Rect, double Energy)
         {
             Rect.Stroke = Stroke;
             if (Energy <= 0)
@@ -203,6 +221,24 @@ namespace Evolution
             }
 
             Rect.Fill = EnergyColors[6];
+        }
+
+        /// <summary>
+        /// Раскрашивает квадрат в зависимости от энергии
+        /// </summary>
+        /// <param name="Rect">Квадрат для раскраски</param>
+        /// <param name="Nutrition">Тип питания</param>
+        /// <param name="Energy">Энергия (для определения трупа)</param>
+        protected void ColorizeNutrition(Rectangle Rect, byte Nutrition, double Energy)
+        {
+            Rect.Stroke = Stroke;
+            if (Energy <= 0)
+            {
+                Rect.Fill = EnergyColors[-1];
+                return;
+            }
+
+            Rect.Fill = NutritionColors[Nutrition];
         }
         #endregion
 
@@ -227,7 +263,7 @@ namespace Evolution
         /// <param name="Old">Особь для уничтожения</param>
         public void Remove(Species Old)
         {
-            ToRemove.Remove(Old);
+            ToRemove.Add(Old);
             Old.Kill();
             Map[Old.Left, Old.Top] = null;
             Changed[Old.Left, Old.Top] = true;
@@ -249,7 +285,7 @@ namespace Evolution
         /// </summary>
         public void RemoveAll()
         {
-            foreach (Species Ind in ToAdd)
+            foreach (Species Ind in ToRemove)
             {
                 individuals.Remove(Ind);
                 Ind.Dispose();
@@ -287,6 +323,8 @@ namespace Evolution
                 El.Step();
             AddAll();
             RemoveAll();
+
+            CountList.Add(individuals.Count);
         }
 
         /// <summary>
@@ -302,7 +340,8 @@ namespace Evolution
                         if (Map[i, j] == null) ShowNull(Rectangles[i, j]);
                         else
                         {
-                            Colorize(Rectangles[i, j], Map[i, j].Energy);
+                            //ColorizeEnergy(Rectangles[i, j], Map[i, j].Energy);
+                            ColorizeNutrition(Rectangles[i, j], Map[i, j].Nutrition, Map[i, j].Energy);
                             Map[i, j].Changed = false;
                         }
                         Changed[i, j] = false;
@@ -312,7 +351,8 @@ namespace Evolution
             // Отображаем изменённые объекты
             foreach (Species El in individuals.Where(Obj => Obj.Changed))
             {
-                Colorize(Rectangles[El.Left, El.Top], El.Energy);
+                //ColorizeEnergy(Rectangles[El.Left, El.Top], El.Energy);
+                ColorizeNutrition(Rectangles[El.Left, El.Top], El.Nutrition, El.Energy);
                 Changed[El.Left, El.Top] = false;
                 El.Changed = false;
             }
@@ -327,7 +367,8 @@ namespace Evolution
                 for (int j = 0; j < TableHeight; j++)
                 {
                     if (Map[i, j] == null) ShowNull(Rectangles[i, j]);
-                    else Colorize(Rectangles[i, j], Map[i, j].Energy);
+                    //else ColorizeEnergy(Rectangles[i, j], Map[i, j].Energy);
+                    else ColorizeNutrition(Rectangles[i, j], Map[i, j].Nutrition, Map[i, j].Energy);
                     Changed[i, j] = false;
                     if (Map[i, j] != null) Map[i, j].Changed = false;
                 }
@@ -413,6 +454,27 @@ namespace Evolution
             El.Position = To;
             Map[El.Position.X, El.Position.Y] = El;
             El.Changed = true;
+        }
+
+        /// <summary>
+        /// Показывает наличие соседних объектов в зависимости от чувствителтьности объекта
+        /// </summary>
+        /// <param name="El">Объект-сенсор</param>
+        /// <returns>Список соседних объектов</returns>
+        public List<Species> Sense(Species El)
+        {
+            List<Species> Found= new List<Species>();
+
+            for (int i = El.Left - El.Sensitivity; i <= El.Left + El.Sensitivity; i++)
+                for (int j = El.Top - El.Sensitivity; j <= El.Top + El.Sensitivity; j++)
+                {
+                    if (j < 0 || j >= TableHeight) continue;
+                    int I = i < 0 ? i + TableWidth : i;
+                    I = I >= TableWidth ? I - TableWidth : I;
+                    if (Map[I, j] != null) Found.Add(Map[I, j]);
+                }
+
+            return Found;
         }
 
         #endregion

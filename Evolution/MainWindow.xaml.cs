@@ -21,6 +21,7 @@ namespace Evolution
     public partial class MainWindow : Window
     {
         System.Windows.Threading.DispatcherTimer MoveTimer, UpdateTimer;
+        int Steps = 0;
 
         public MainWindow()
         {
@@ -36,6 +37,7 @@ namespace Evolution
                     Position = new IntPoint() { X = i, Y = 0}
                 });
 
+            CountLine.Source = MainBiome.CountList;
 
             MoveTimer = new System.Windows.Threading.DispatcherTimer();
             MoveTimer.Tick += new EventHandler(MoveTimerTick);
@@ -58,7 +60,13 @@ namespace Evolution
             MainBiome.Step();
             MainBiome.Show();
 
-            Status.Content = DateTime.Now.Subtract(StartTime).TotalMilliseconds.ToString();
+            Status.Content = "Время расчёта шага " + 
+                DateTime.Now.Subtract(StartTime).TotalMilliseconds.ToString() + " мс.";
+
+            StepN.Content = $"Шаг № {++Steps}.";
+            Count.Content = $"Всего существ: {MainBiome.ElementsCount}";
+
+            CountLine.Update();
         }
 
         private void UpdateTimerTick(object sender, EventArgs e)

@@ -12,7 +12,7 @@ namespace Evolution
         #region Константы
         protected const double EnergyPerStep = 0.1;
         protected const int DNA_Count = 100;
-        protected const int OtherElementsToMutate = 1;
+        protected const int OtherElementsToMutate = 2;
         #endregion
 
         #region private параметры
@@ -20,9 +20,10 @@ namespace Evolution
         bool alife = true;
         bool destroying = false;
         Random RND;
-        int left_speed = 1;
+        int left_speed = 0;
         int top_speed = 0;
         byte[] DNA = new byte[100];
+        int sensitivity = 0;
 
         /// <summary>
         /// Список генов для DNA
@@ -31,11 +32,11 @@ namespace Evolution
         { 
             // Базовые гены
             0x00, // - Пустой ген. Объект ничего не делает.
-            0x01, // - Ген размножения. Позволяет создать потомка.
+            0x01,0x01,0x01,0x01,0x01,0x01, // - Ген размножения. Позволяет создать потомка.
 
             // Гены питания 0x1
-            0x10, // - Ген фотосинтеза. Получние энергии из солнечного света. + X2
-            0x11, // - Ген хищнечиства. Получение энергии из съеденых особей. Получает их энергию +1 за биомассу.
+            0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10, // - Ген фотосинтеза. Получние энергии из солнечного света. + X2
+            0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11, // - Ген хищнечиства. Получение энергии из съеденых особей. Получает их энергию +1 за биомассу.
 
             // Гены движения 0x2
             0x20, // - Ген движения. Позволяет переместиться по направлению скорости
@@ -122,6 +123,19 @@ namespace Evolution
         }
 
         /// <summary>
+        /// Чувствительность особи.
+        /// </summary>
+        public int Sensitivity
+        {
+            get => sensitivity;
+            set
+            {
+                sensitivity = value;
+                if (sensitivity < 0) sensitivity = 0;
+            }
+        }
+
+        /// <summary>
         /// Биом, в котором находится вид. Служит для взаимодействия с другими организмами.
         /// </summary>
         public Biome MyBiome { get; set; }
@@ -158,8 +172,17 @@ namespace Evolution
         /// Положение на карте биома
         /// </summary>
         public IntPoint Position { get => position; set => position = value; }
+
+        /// <summary>
+        /// Тип питания
+        /// </summary>
+        public byte Nutrition { get; protected set; }
         #endregion
 
+        /// <summary>
+        /// Конструктор
+        /// </summary>
+        /// <param name="RandomSeed">Зерно для рандомайзера</param>
         public Species(int RandomSeed)
         {
             RND = new Random(RandomSeed);
@@ -168,6 +191,7 @@ namespace Evolution
                 DNA[i] = 0x10;
             for (int i = DNA_Count - 5; i < DNA_Count; i++)
                 DNA[i] = 0x01;
+            Nutrition = SetNutrition();
         }
 
         #region Внутренние методы
@@ -177,7 +201,12 @@ namespace Evolution
         /// </summary>
         protected void Move()
         {
-            
+            MyBiome.Move(this, new IntPoint()
+            {
+                X = Left + LeftSpeed,
+                Y = Top + TopSpeed
+            });
+            Energy -= EnergyPerStep * (Math.Abs(LeftSpeed) + Math.Abs(TopSpeed));
         }
 
         /// <summary>
@@ -240,6 +269,19 @@ namespace Evolution
                     PhotoSynthesis(); break;
                 case 0x11:
                     Eat(); break;
+                case 0x20:
+                    Move(); break;
+                case 0x21:
+                    LeftSpeed++; break;
+                case 0x22:
+                    LeftSpeed--; break;
+                case 0x23:
+                    TopSpeed--; break;
+                case 0x24:
+                    TopSpeed++; break;
+                case 0x30:
+                    SenseFoodAll(); break;
+
             }
         }
 
@@ -306,7 +348,11 @@ namespace Evolution
             {
                 case 0:
                     MaxSpeed += RND.Next(3) - 1; break;
+                case 1:
+                    Sensitivity += RND.Next(3) - 1; break;
             }
+
+            Nutrition = SetNutrition();
         }
 
         /// <summary>
@@ -316,6 +362,79 @@ namespace Evolution
         protected byte NewGene()
         {
             return Genes[RND.Next(Genes.Length)];
+        }
+
+        /// <summary>
+        /// Определяет ближайшую жертву независимо от её качеств и стремися к ней.
+        /// </summary>
+        protected void SenseFoodAll()
+        {
+            Energy -= EnergyPerStep * Sensitivity;
+
+            int dist = MyBiome.TableWidth * MyBiome.TableHeight;
+            List<Species> Clothest = new List<Species>(); 
+
+            foreach (Species El in MyBiome.Sense(this))
+            {
+                int D = Distation(El);
+                if (dist > D)
+                {
+                    Clothest = new List<Species>();
+                    dist = D;
+                    Clothest.Add(El);
+                    continue;
+                }
+                if (dist == D) Clothest.Add(El);
+            }
+
+            if (Clothest.Count == 0) return;
+
+            Species Aim;
+            if (Clothest.Count == 1) Aim = Clothest[0];
+            else
+            {
+                Aim = Clothest.OrderBy(x => Math.Abs(Math.Abs(x.Left - Left) - Math.Abs(x.Top - Top))).ToArray()[0];
+            }
+            LeftSpeed = GoTo(Left, Aim.Left);
+            TopSpeed = GoTo(Top, Aim.Top);
+        }
+
+        /// <summary>
+        /// Установить тип питания
+        /// </summary>
+        /// <returns></returns>
+        protected byte SetNutrition()
+        {
+            byte PhS = 0;
+            byte Predator = 0;
+
+            foreach (byte i in DNA)
+                switch (i)
+                {
+                    case 0x10: PhS++; break;
+                    case 0x11: Predator++; break;
+                }
+
+            if (Math.Abs(PhS - Predator) * 100 / (PhS + Predator) < 10) return 1;
+            if (PhS > Predator) return 0;
+            return 2;
+        }
+
+        /// <summary>
+        /// Вычисляет расстояние между двумя объектами
+        /// </summary>
+        /// <returns></returns>
+        protected int Distation(Species Other)
+        {
+            return Math.Abs(Left - Other.Left) + Math.Abs(Top - Other.Top);
+        }
+
+        protected int GoTo(int My, int Other)
+        {
+            if (Math.Abs(My - Other) > MaxSpeed) return My - Other;
+            if (My == Other) return 0;
+            if (My > Other) return My - Other + 1;
+            return My - Other - 1;
         }
         #endregion
 
