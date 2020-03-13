@@ -20,34 +20,36 @@ namespace Evolution
     /// </summary>
     public partial class MainWindow : Window
     {
-        System.Windows.Threading.DispatcherTimer MoveTimer;
-
-        Biome MainBiome;
+        System.Windows.Threading.DispatcherTimer MoveTimer, UpdateTimer;
+        int Steps = 0;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            MainBiome = new Biome(Main);
-            MainBiome.Add(new Species()
-            {
-                Energy = 10,
-                MaxSpeed = 2,
-                Margin = new Thickness(0),
-                Width = 10,
-                Height = 10,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top
-            });
+            MainBiome.Initialize(800, 400);
 
+            for (int i = 0; i < 80; i++)
+                MainBiome.Add(new Species(MainBiome.RandomSeeds.Next(int.MaxValue))
+                {
+                    Energy = 10,
+                    MaxSpeed = 2,
+                    Position = new IntPoint() { X = i, Y = 0}
+                });
+
+            CountLine.Source = MainBiome.CountList;
 
             MoveTimer = new System.Windows.Threading.DispatcherTimer();
             MoveTimer.Tick += new EventHandler(MoveTimerTick);
-            MoveTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
+            MoveTimer.Interval = new TimeSpan(0, 0, 0, 0, 20);
 
             MoveTimer.Start();
 
-            
+            UpdateTimer = new System.Windows.Threading.DispatcherTimer();
+            UpdateTimer.Tick += new EventHandler(UpdateTimerTick);
+            UpdateTimer.Interval = new TimeSpan(0, 0, 0, 0, 500);
+
+            UpdateTimer.Start();
 
         }
 
@@ -55,13 +57,21 @@ namespace Evolution
         {
             DateTime StartTime = DateTime.Now;
 
-            foreach (Species Ind in MainBiome.Individuals)
-                Ind.Step();
+            MainBiome.Step();
+            MainBiome.Show();
 
-            MainBiome.AddAll();
-            MainBiome.RemoveAll();
+            Status.Content = "Время расчёта шага " + 
+                DateTime.Now.Subtract(StartTime).TotalMilliseconds.ToString() + " мс.";
 
-            Status.Content = DateTime.Now.Subtract(StartTime).TotalMilliseconds.ToString();
+            StepN.Content = $"Шаг № {++Steps}.";
+            Count.Content = $"Всего существ: {MainBiome.ElementsCount}";
+
+            CountLine.Update();
+        }
+
+        private void UpdateTimerTick(object sender, EventArgs e)
+        {
+            MainBiome.ShowAll();
         }
     }
 }
