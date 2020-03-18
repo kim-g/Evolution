@@ -77,7 +77,8 @@ namespace Evolution
 
         protected Brush Stroke = new SolidColorBrush(Colors.Black);
 
-        
+        private double mutagen = 10;
+
         #endregion
 
         #region Внешние свойства
@@ -104,7 +105,77 @@ namespace Evolution
         /// </summary>
         public int ElementsCount { get => individuals.Count + ToAdd.Count - ToRemove.Count; }
 
+        /// <summary>
+        /// Количество особей-продуцентов
+        /// </summary>
+        public int ProducerCount { get => individuals.Where(x => x.Nutrition == 0).Count(); }
+
+        /// <summary>
+        /// Количество особей со смешанным типом питания
+        /// </summary>
+        public int MixedCount { get => individuals.Where(x => x.Nutrition == 1).Count(); }
+
+        /// <summary>
+        /// Количество особей-хищников
+        /// </summary>
+        public int PredatorCount { get => individuals.Where(x => x.Nutrition == 2).Count(); }
+
+        /// <summary>
+        /// Список количества всех особей в каждый момент времени
+        /// </summary>
         public List<double> CountList { get; private set; } = new List<double>();
+
+        /// <summary>
+        /// Список количества всех продуцентов в каждый момент времени
+        /// </summary>
+        public List<double> ProducerList { get; private set; } = new List<double>();
+
+        /// <summary>
+        /// Список количества всех особей со смешанным типом питания в каждый момент времени
+        /// </summary>
+        public List<double> MixedList { get; private set; } = new List<double>();
+
+        /// <summary>
+        /// Список количества всех хищников в каждый момент времени
+        /// </summary>
+        public List<double> PredatorList { get; private set; } = new List<double>();
+
+        /// <summary>
+        /// Выбор способа колоризации
+        /// 0 - Раскрасить по энергии
+        /// 1 - Раскрасить по способам питания
+        /// </summary>
+        public byte MethodOfColorization { get; set; } = 0;
+
+        /// <summary>
+        /// Процент мутагенности среды
+        /// </summary>
+        /// <returns></returns>
+        public double Mutagen
+        {
+            get => mutagen;
+            set
+            {
+                mutagen = value;
+                if (mutagen < 0) mutagen = 0;
+                if (mutagen > 100) mutagen = 100;
+            }
+        }
+
+        /// <summary>
+        /// Флаг, позволяющий хищником поедать других хищников
+        /// </summary>
+        public bool PredatorEatPredator { get; set; } = false;
+
+        /// <summary>
+        /// Флаг, позволяющий хищником фотосинтезировать при наличии подобных генов
+        /// </summary>
+        public bool PredatorHavePhotosynthesys { get; set; } = false;
+
+        /// <summary>
+        /// Флаг, позволяющий растениям поедать другие клетки при наличии соответствующих генов
+        /// </summary>
+        public bool ProducerEatOther { get; set; } = false;
 
         #endregion
 
@@ -195,6 +266,22 @@ namespace Evolution
         {
             Rect.Fill = null;
             Rect.Stroke = null;
+        }
+
+        /// <summary>
+        /// Раскрашивает клетку в зависимости от выбранного стиля
+        /// </summary>
+        /// <param name="Rect">Клетка</param>
+        /// <param name="El">Связанная с клеткой особь</param>
+        protected void Colorize(Rectangle Rect, Species El)
+        {
+            switch (MethodOfColorization)
+            {
+                case 0:
+                    ColorizeEnergy(Rect, El.Energy); break;
+                case 1:
+                    ColorizeNutrition(Rect, El.Nutrition, El.Energy); break;
+            }
         }
 
         /// <summary>
@@ -325,6 +412,9 @@ namespace Evolution
             RemoveAll();
 
             CountList.Add(individuals.Count);
+            ProducerList.Add(ProducerCount);
+            MixedList.Add(MixedCount);
+            PredatorList.Add(PredatorCount);
         }
 
         /// <summary>
@@ -340,8 +430,7 @@ namespace Evolution
                         if (Map[i, j] == null) ShowNull(Rectangles[i, j]);
                         else
                         {
-                            //ColorizeEnergy(Rectangles[i, j], Map[i, j].Energy);
-                            ColorizeNutrition(Rectangles[i, j], Map[i, j].Nutrition, Map[i, j].Energy);
+                            Colorize(Rectangles[i, j], Map[i, j]);
                             Map[i, j].Changed = false;
                         }
                         Changed[i, j] = false;
@@ -351,8 +440,7 @@ namespace Evolution
             // Отображаем изменённые объекты
             foreach (Species El in individuals.Where(Obj => Obj.Changed))
             {
-                //ColorizeEnergy(Rectangles[El.Left, El.Top], El.Energy);
-                ColorizeNutrition(Rectangles[El.Left, El.Top], El.Nutrition, El.Energy);
+                Colorize(Rectangles[El.Left, El.Top], El);
                 Changed[El.Left, El.Top] = false;
                 El.Changed = false;
             }
@@ -367,8 +455,7 @@ namespace Evolution
                 for (int j = 0; j < TableHeight; j++)
                 {
                     if (Map[i, j] == null) ShowNull(Rectangles[i, j]);
-                    //else ColorizeEnergy(Rectangles[i, j], Map[i, j].Energy);
-                    else ColorizeNutrition(Rectangles[i, j], Map[i, j].Nutrition, Map[i, j].Energy);
+                    else Colorize(Rectangles[i, j], Map[i, j]);
                     Changed[i, j] = false;
                     if (Map[i, j] != null) Map[i, j].Changed = false;
                 }

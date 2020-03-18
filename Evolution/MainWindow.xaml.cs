@@ -23,34 +23,55 @@ namespace Evolution
         System.Windows.Threading.DispatcherTimer MoveTimer, UpdateTimer;
         int Steps = 0;
 
+        private bool running = false;
+
+        protected bool Running
+        {
+            get => running;
+            set
+            {
+                running = value;
+                if (running)
+                {
+                    Start.Content = "Остановить";
+                    MoveTimer.Start();
+                    UpdateTimer.Start();
+                    return;
+                }
+
+                Start.Content = "Продолжить";
+                MoveTimer.Stop();
+                UpdateTimer.Stop();
+            }
+        }
+
         public MainWindow()
         {
             InitializeComponent();
 
             MainBiome.Initialize(800, 400);
 
-            for (int i = 0; i < 80; i++)
-                MainBiome.Add(new Species(MainBiome.RandomSeeds.Next(int.MaxValue))
+            for (int i = 0; i < 1; i++)
+                MainBiome.Add(new Species(MainBiome.RandomSeeds.Next(int.MaxValue), 
+                    Convert.ToByte(i==40 ? 2 : 0))
                 {
                     Energy = 10,
                     MaxSpeed = 2,
                     Position = new IntPoint() { X = i, Y = 0}
                 });
 
-            CountLine.Source = MainBiome.CountList;
+            CountLine.Line_1_Source = MainBiome.CountList;
+            CountLine.Line_2_Source = MainBiome.ProducerList;
+            CountLine.Line_3_Source = MainBiome.MixedList;
+            CountLine.Line_4_Source = MainBiome.PredatorList;
 
             MoveTimer = new System.Windows.Threading.DispatcherTimer();
             MoveTimer.Tick += new EventHandler(MoveTimerTick);
             MoveTimer.Interval = new TimeSpan(0, 0, 0, 0, 20);
 
-            MoveTimer.Start();
-
             UpdateTimer = new System.Windows.Threading.DispatcherTimer();
             UpdateTimer.Tick += new EventHandler(UpdateTimerTick);
             UpdateTimer.Interval = new TimeSpan(0, 0, 0, 0, 500);
-
-            UpdateTimer.Start();
-
         }
 
         private void MoveTimerTick(object sender, EventArgs e)
@@ -67,6 +88,33 @@ namespace Evolution
             Count.Content = $"Всего существ: {MainBiome.ElementsCount}";
 
             CountLine.Update();
+        }
+
+        private void MutatonTB_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                MainBiome.Mutagen = Convert.ToDouble(((TextBox)sender).Text);
+            }
+            catch
+            {
+                ((TextBox)sender).Text = MainBiome.Mutagen.ToString();
+            }
+        }
+
+        private void ShowEnergy_Checked(object sender, RoutedEventArgs e)
+        {
+            MainBiome.MethodOfColorization = 0;
+        }
+
+        private void ShowNutration_Checked(object sender, RoutedEventArgs e)
+        {
+            MainBiome.MethodOfColorization = 1;
+        }
+
+        private void Start_Click(object sender, RoutedEventArgs e)
+        {
+            Running = !Running;
         }
 
         private void UpdateTimerTick(object sender, EventArgs e)

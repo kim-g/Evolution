@@ -14,6 +14,29 @@
                 <Label x:Name="StepN" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,0,0,0" />
                 <Label x:Name="Count" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,0,0,0" />
             </StackPanel>
+            <Grid Background="#FFDEDEDE">
+                <StackPanel x:Name="Manual" Orientation="Horizontal" Margin="10">
+                    <Button x:Name="Start" Content="Запустить" Margin="0,0,5,0" Click="Start_Click"/>
+                    <Rectangle Width="1" Height="Auto" Fill="Gray"/>
+                    <StackPanel Orientation="Vertical" Margin="5,0,5,0">
+                        <Label Content="Вероятность мутации" FontWeight="Bold"/>
+                        <TextBox x:Name="MutatonTB" Text="10" TextChanged="MutatonTB_TextChanged"/>
+                    </StackPanel>
+                    <Rectangle Width="1" Height="Auto" Fill="Gray"/>
+                    <StackPanel Orientation="Vertical" Margin="5,0,5,0">
+                        <Label Content="Окраска" FontWeight="Bold"/>
+                        <RadioButton x:Name="ShowEnergy" Content="Окрасить энергию" IsChecked="True" Checked="ShowEnergy_Checked"/>
+                        <RadioButton x:Name="ShowNutration" Content="Окрасить питание" Checked="ShowNutration_Checked"/>
+                    </StackPanel>
+                    <Rectangle Width="1" Height="Auto" Fill="Gray"/>
+                    <StackPanel Orientation="Vertical" Margin="5,0,5,0">
+                        <Label Content="Питание" FontWeight="Bold"/>
+                        <CheckBox Content="Хищники едят хищников"/>
+                        <CheckBox Content="Хищники фотосинтезируют"/>
+                        <CheckBox Content="Растения едят других"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
             <local:Diagram x:Name="CountLine" Height="100"/>
         </StackPanel>
     </Grid>

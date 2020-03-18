@@ -17,6 +17,7 @@ namespace Evolution
 
         #region private параметры
         double energy;
+        int life = 0;
         bool alife = true;
         bool destroying = false;
         Random RND;
@@ -183,14 +184,38 @@ namespace Evolution
         /// Конструктор
         /// </summary>
         /// <param name="RandomSeed">Зерно для рандомайзера</param>
-        public Species(int RandomSeed)
+        public Species(int RandomSeed, byte _Nutrition = 0)
         {
             RND = new Random(RandomSeed);
 
-            for (int i = 0; i < DNA_Count - 5; i++)
-                DNA[i] = 0x10;
+            for (int i = 0; i < DNA_Count - 15; i++)
+                switch (_Nutrition)
+                {
+                    case 0: DNA[i] = 0x10; break;
+                    case 1: DNA[i] = Convert.ToByte(RND.Next(2) == 0 ?  0x10 : 0x11); break;
+                    case 2: DNA[i] = 0x11; break;
+
+                    default:  DNA[i] = 0x10; break;
+                }
+
+            for (int i = DNA_Count - 15; i < DNA_Count - 5; i++)
+                switch (_Nutrition)
+                {
+                    case 0: DNA[i] = 0x10; break;
+                    case 1: DNA[i] = Convert.ToByte(RND.Next(2) == 0 ? 0x10 : 0x20); break;
+                    case 2: DNA[i] = 0x20; break;
+
+                    default: DNA[i] = 0x10; break;
+                }
+
             for (int i = DNA_Count - 5; i < DNA_Count; i++)
                 DNA[i] = 0x01;
+
+            if (_Nutrition > 0)
+            {
+                Sensitivity = 3;
+                MaxSpeed = 3;
+            }
             Nutrition = SetNutrition();
         }
 
@@ -240,6 +265,7 @@ namespace Evolution
             Changed = true;
             MyBiome.Change(Position);
             alife = false;
+            Nutrition = 0;
         }
 
         /// <summary>
@@ -320,20 +346,31 @@ namespace Evolution
         /// </summary>
         protected void PhotoSynthesis()
         {
-            Energy += 5 * EnergyPerStep;
-            Changed = true;
+            if (MyBiome.PredatorHavePhotosynthesys || Nutrition < 1)
+            {
+                Energy += 5 * EnergyPerStep;
+                Changed = true;
+            }
         }
 
+        /// <summary>
+        /// Поедает ближнего
+        /// </summary>
         protected void Eat()
         {
-            List<Species> Near = MyBiome.Near(this);
+            if (MyBiome.ProducerEatOther || Nutrition > 1)
+            {
+                List<Species> Near = MyBiome.PredatorEatPredator
+                    ? MyBiome.Near(this)
+                    : MyBiome.Near(this).Where(x => x.Nutrition < 2).ToList();
 
-            if (Near.Count == 0) return;
+                if (Near.Count == 0) return;
 
-            Species Victim = Near[RND.Next(Near.Count)];
-            Energy += Victim.Energy + 1;
-            Victim.Eaten();
-            Changed = true;
+                Species Victim = Near[RND.Next(Near.Count)];
+                Energy += Victim.Energy + 1;
+                Victim.Eaten();
+                Changed = true;
+            }
         }
 
         /// <summary>
@@ -341,6 +378,8 @@ namespace Evolution
         /// </summary>
         protected void Mutate()
         {
+            if (RND.Next(100) > MyBiome.Mutagen) return;
+
             int Seed = RND.Next(DNA_Count + OtherElementsToMutate);
             if (Seed < DNA_Count)
                 DNA[Seed] = NewGene();
@@ -374,7 +413,7 @@ namespace Evolution
             int dist = MyBiome.TableWidth * MyBiome.TableHeight;
             List<Species> Clothest = new List<Species>(); 
 
-            foreach (Species El in MyBiome.Sense(this))
+            foreach (Species El in MyBiome.Sense(this).Where(x => x.Nutrition < 2))
             {
                 int D = Distation(El);
                 if (dist > D)

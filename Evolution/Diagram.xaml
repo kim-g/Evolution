@@ -9,5 +9,8 @@
     <Grid>
         <Rectangle x:Name="BackgroundRect" Fill="White" Stroke="Black"/>
         <Polyline x:Name="Line1" Stroke="Red" StrokeThickness="2"/>
+        <Polyline x:Name="Line2" Stroke="Lime" StrokeThickness="1"/>
+        <Polyline x:Name="Line3" Stroke="Cyan" StrokeThickness="1"/>
+        <Polyline x:Name="Line4" Stroke="Blue" StrokeThickness="1"/>
     </Grid>
 </UserControl>
