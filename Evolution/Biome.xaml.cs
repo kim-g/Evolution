@@ -79,6 +79,11 @@ namespace Evolution
 
         private double mutagen = 10;
 
+        /// <summary>
+        /// Количество логических ядер процессора.
+        /// </summary>
+        private int Processors = Environment.ProcessorCount;
+
         #endregion
 
         #region Внешние свойства
@@ -98,6 +103,9 @@ namespace Evolution
         /// </summary>
         public double ElementSize { get; set; } = 10;
 
+        /// <summary>
+        /// Генератор случайных чисел для генерации ключей генераторов особей.
+        /// </summary>
         public Random RandomSeeds = new Random();
 
         /// <summary>
@@ -108,17 +116,29 @@ namespace Evolution
         /// <summary>
         /// Количество особей-продуцентов
         /// </summary>
-        public int ProducerCount { get => individuals.Where(x => x.Nutrition == 0).Count(); }
+        public int ProducerCount { get => individuals.Where(predicate: x =>
+        {
+            if (x == null) return false;
+            return x.Nutrition == 0;
+        }).Count(); }
 
         /// <summary>
         /// Количество особей со смешанным типом питания
         /// </summary>
-        public int MixedCount { get => individuals.Where(x => x.Nutrition == 1).Count(); }
+        public int MixedCount { get => individuals.Where(x =>
+        {
+            if (x == null) return false;
+            return x.Nutrition == 1;
+        }).Count(); }
 
         /// <summary>
         /// Количество особей-хищников
         /// </summary>
-        public int PredatorCount { get => individuals.Where(x => x.Nutrition == 2).Count(); }
+        public int PredatorCount { get => individuals.Where(x =>
+        {
+            if (x == null) return false;
+            return x.Nutrition == 2;
+        }).Count(); }
 
         /// <summary>
         /// Список количества всех особей в каждый момент времени
@@ -176,6 +196,11 @@ namespace Evolution
         /// Флаг, позволяющий растениям поедать другие клетки при наличии соответствующих генов
         /// </summary>
         public bool ProducerEatOther { get; set; } = false;
+
+        /// <summary>
+        /// Номер текущего шага. 
+        /// </summary>
+        public int Time { get; private set; } = 0;
 
         #endregion
 
@@ -327,6 +352,21 @@ namespace Evolution
 
             Rect.Fill = NutritionColors[Nutrition];
         }
+
+        /// <summary>
+        /// Последовательно делает шаг для определённого набора особей.
+        /// </summary>
+        /// <param name="Start"></param>
+        /// <param name="Count"></param>
+        protected void SubStep(int Start, int Count)
+        {
+            for (int i = Start; i < Start + Count; i++)
+                if (individuals.Count > i)
+                {
+                    if (individuals[i] == null) continue;
+                    individuals[i].Step();
+                }
+        }
         #endregion
 
         #region Внешние методы
@@ -350,6 +390,7 @@ namespace Evolution
         /// <param name="Old">Особь для уничтожения</param>
         public void Remove(Species Old)
         {
+            if (Old == null) return;
             ToRemove.Add(Old);
             Old.Kill();
             Map[Old.Left, Old.Top] = null;
@@ -374,6 +415,7 @@ namespace Evolution
         {
             foreach (Species Ind in ToRemove)
             {
+                if (Ind == null) continue;
                 individuals.Remove(Ind);
                 Ind.Dispose();
             }
@@ -406,8 +448,19 @@ namespace Evolution
         /// </summary>
         public void Step()
         {
-            foreach (Species El in individuals)
-                El.Step();
+            Time++;
+
+            int Block = Convert.ToInt32(Math.Ceiling((double)individuals.Count / Processors));
+            Task[] Tasks = new Task[Processors];
+            for (int i = 0; i < Processors; i++)
+            {
+                int Start = i * Block;
+                Tasks[i] = Task.Factory.StartNew(() => SubStep(Start, Block));
+            }
+            Task.WaitAll(Tasks);
+
+            /*foreach (Species El in individuals)
+                El.Step();*/
             AddAll();
             RemoveAll();
 
@@ -438,7 +491,11 @@ namespace Evolution
                     }
 
             // Отображаем изменённые объекты
-            foreach (Species El in individuals.Where(Obj => Obj.Changed))
+            foreach (Species El in individuals.Where(Obj =>
+            {
+                if (Obj == null) return false;
+                return Obj.Changed;
+            }))
             {
                 Colorize(Rectangles[El.Left, El.Top], El);
                 Changed[El.Left, El.Top] = false;

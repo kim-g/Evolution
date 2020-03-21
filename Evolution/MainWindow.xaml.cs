@@ -21,7 +21,6 @@ namespace Evolution
     public partial class MainWindow : Window
     {
         System.Windows.Threading.DispatcherTimer MoveTimer, UpdateTimer;
-        int Steps = 0;
 
         private bool running = false;
 
@@ -84,7 +83,7 @@ namespace Evolution
             Status.Content = "Время расчёта шага " + 
                 DateTime.Now.Subtract(StartTime).TotalMilliseconds.ToString() + " мс.";
 
-            StepN.Content = $"Шаг № {++Steps}.";
+            StepN.Content = $"Шаг № {MainBiome.Time}.";
             Count.Content = $"Всего существ: {MainBiome.ElementsCount}";
 
             CountLine.Update();
@@ -115,6 +114,21 @@ namespace Evolution
         private void Start_Click(object sender, RoutedEventArgs e)
         {
             Running = !Running;
+        }
+
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            MainBiome.PredatorEatPredator = ((CheckBox)sender).IsChecked == true;
+        }
+
+        private void CheckBox_Click_1(object sender, RoutedEventArgs e)
+        {
+            MainBiome.PredatorHavePhotosynthesys = ((CheckBox)sender).IsChecked == true;
+        }
+
+        private void CheckBox_Click_2(object sender, RoutedEventArgs e)
+        {
+            MainBiome.ProducerEatOther = ((CheckBox)sender).IsChecked == true;
         }
 
         private void UpdateTimerTick(object sender, EventArgs e)
