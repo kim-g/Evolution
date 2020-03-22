@@ -84,6 +84,8 @@ namespace Evolution
         /// </summary>
         private int Processors = Environment.ProcessorCount;
 
+        private object Locked = new object();
+
         #endregion
 
         #region Внешние свойства
@@ -364,7 +366,8 @@ namespace Evolution
                 if (individuals.Count > i)
                 {
                     if (individuals[i] == null) continue;
-                    individuals[i].Step();
+                    lock (Locked)
+                        individuals[i].Step();
                 }
         }
         #endregion
