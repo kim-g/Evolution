@@ -17,13 +17,12 @@ namespace Evolution
 
         #region private параметры
         double energy;
-        int life = 0;
         bool alife = true;
         bool destroying = false;
         Random RND;
         int left_speed = 0;
         int top_speed = 0;
-        byte[] DNA = new byte[100];
+        byte[] dna = new byte[100];
         int sensitivity = 0;
 
         /// <summary>
@@ -58,39 +57,14 @@ namespace Evolution
         private int _maxSpeed;
 
         /// <summary>
-        /// Скорость перемещения особи по горизонтали
-        /// </summary>
-        protected int LeftSpeed
-        {
-            get => left_speed;
-            set
-            {
-                int New = value;
-                if (New > 0 && New > MaxSpeed) New = Convert.ToInt32(MaxSpeed);
-                if (New < 0 && New < -MaxSpeed) New = Convert.ToInt32(-MaxSpeed);
-                left_speed = New;
-            }
-        }
-
-        /// <summary>
-        /// Скорость перемещения особи по вертикали
-        /// </summary>
-        protected int TopSpeed
-        {
-            get => top_speed;
-            set
-            {
-                int New = value;
-                if (New > 0 && New > MaxSpeed) New = Convert.ToInt32(MaxSpeed);
-                if (New < 0 && New < -MaxSpeed) New = Convert.ToInt32(-MaxSpeed);
-                top_speed = New;
-            }
-        }
-
-        /// <summary>
         /// Положение на карте биома
         /// </summary>
         protected IntPoint position;
+
+        /// <summary>
+        /// Внутренняя переменная главного биома.
+        /// </summary>
+        private Biome _myBiome;
         #endregion
 
         #region Свойства класса
@@ -139,7 +113,13 @@ namespace Evolution
         /// <summary>
         /// Биом, в котором находится вид. Служит для взаимодействия с другими организмами.
         /// </summary>
-        public Biome MyBiome { get; set; }
+        public Biome MyBiome { get => _myBiome;
+            set
+            {
+                _myBiome = value;
+                Start = _myBiome.Time;
+                ID = _myBiome.IndividualsID;
+            } }
 
         /// <summary>
         /// Положение слева на карте биома 
@@ -165,7 +145,7 @@ namespace Evolution
             {
                 position.Y = value;
                 if (position.Y < 0) position.Y = 0;
-                if (position.Y >= MyBiome.TableHeight) position.Y = MyBiome.TableHeight-1;
+                if (position.Y >= MyBiome.TableHeight) position.Y = MyBiome.TableHeight - 1;
             }
         }
 
@@ -178,6 +158,56 @@ namespace Evolution
         /// Тип питания
         /// </summary>
         public byte Nutrition { get; protected set; }
+
+        /// <summary>
+        /// Номер цикла рождения особи
+        /// </summary>
+        public int Start { get; private set; }
+
+        /// <summary>
+        /// Время жизни особи
+        /// </summary>
+        public int Life { get => MyBiome.Time - Start; }
+
+        /// <summary>
+        /// Номер особи в биоме.
+        /// </summary>
+        public int ID { get; private set; }
+
+        /// <summary>
+        /// Набор генов
+        /// </summary>
+        public byte[] DNA { get => dna; private set => dna = value; }
+
+        /// <summary>
+        /// Скорость перемещения особи по горизонтали
+        /// </summary>
+        public int LeftSpeed
+        {
+            get => left_speed;
+            protected set
+            {
+                int New = value;
+                if (New > 0 && New > MaxSpeed) New = Convert.ToInt32(MaxSpeed);
+                if (New < 0 && New < -MaxSpeed) New = Convert.ToInt32(-MaxSpeed);
+                left_speed = New;
+            }
+        }
+
+        /// <summary>
+        /// Скорость перемещения особи по вертикали
+        /// </summary>
+        public int TopSpeed
+        {
+            get => top_speed;
+            protected set
+            {
+                int New = value;
+                if (New > 0 && New > MaxSpeed) New = Convert.ToInt32(MaxSpeed);
+                if (New < 0 && New < -MaxSpeed) New = Convert.ToInt32(-MaxSpeed);
+                top_speed = New;
+            }
+        }
         #endregion
 
         /// <summary>
@@ -192,10 +222,10 @@ namespace Evolution
                 switch (_Nutrition)
                 {
                     case 0: DNA[i] = 0x10; break;
-                    case 1: DNA[i] = Convert.ToByte(RND.Next(2) == 0 ?  0x10 : 0x11); break;
+                    case 1: DNA[i] = Convert.ToByte(RND.Next(2) == 0 ? 0x10 : 0x11); break;
                     case 2: DNA[i] = 0x11; break;
 
-                    default:  DNA[i] = 0x10; break;
+                    default: DNA[i] = 0x10; break;
                 }
 
             for (int i = DNA_Count - 15; i < DNA_Count - 5; i++)
@@ -329,7 +359,7 @@ namespace Evolution
             {
                 Energy = Energy,
                 MaxSpeed = MaxSpeed,
-                DNA = DNA,
+                DNA = (byte[])DNA.Clone(),
                 Changed = true,
                 MyBiome = MyBiome,
                 Position = Position
@@ -408,10 +438,12 @@ namespace Evolution
         /// </summary>
         protected void SenseFoodAll()
         {
+            if (Nutrition == 0 && !MyBiome.ProducerEatOther) return;
+
             Energy -= EnergyPerStep * Sensitivity;
 
             int dist = MyBiome.TableWidth * MyBiome.TableHeight;
-            List<Species> Clothest = new List<Species>(); 
+            List<Species> Clothest = new List<Species>();
 
             foreach (Species El in MyBiome.Sense(this).Where(x => x.Nutrition < 2))
             {

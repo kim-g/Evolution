@@ -86,6 +86,9 @@ namespace Evolution
             StepN.Content = $"Шаг № {MainBiome.Time}.";
             Count.Content = $"Всего существ: {MainBiome.ElementsCount}";
 
+            double MaxEnergy = Math.Round(MainBiome.MaximumEnergy, 1);
+            Energy.Content = $"Максимальная энергия: {MaxEnergy}";
+
             CountLine.Update();
         }
 

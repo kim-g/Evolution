@@ -13,6 +13,7 @@
                 <Label x:Name="Status" VerticalAlignment="Top" HorizontalAlignment="Left" Width="300" />
                 <Label x:Name="StepN" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,0,0,0" />
                 <Label x:Name="Count" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,0,0,0" />
+                <Label x:Name="Energy" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,0,0,0" />
             </StackPanel>
             <Grid Background="#FFDEDEDE">
                 <StackPanel x:Name="Manual" Orientation="Horizontal" Margin="10">

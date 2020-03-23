@@ -38,6 +38,13 @@ namespace Evolution
 
         #region Внутренние методы
 
+        /// <summary>
+        /// Формирует 2D график по заданным параметрам
+        /// </summary>
+        /// <param name="Line"></param>
+        /// <param name="AW"></param>
+        /// <param name="MaxValue"></param>
+        /// <returns></returns>
         protected PointCollection GetLineData(List<double> Line, int AW, double MaxValue)
         {
             List<Point> NewItems = new List<Point>();
@@ -46,13 +53,22 @@ namespace Evolution
                     NewItems.Add(new Point(i, ActualHeight - Line[i] / MaxValue * ActualHeight));
             else
                 for (int i = 0; i < ActualWidth; i++)
-                    NewItems.Add(new Point(i, ActualHeight - Line[Line.Count - AW + i] / MaxValue * ActualHeight));
+                {
+                    int j = Line.Count - AW + i;
+                    j = j < Line.Count ? j : Line.Count - 1;
+                    j = j >= 0 ? j : 0;
+                    NewItems.Add(new Point(i, ActualHeight - Line[j] / MaxValue * ActualHeight));
+                }
+                    
             return new PointCollection(NewItems);
         }
 
         #endregion
 
         #region Внешние методы
+        /// <summary>
+        /// Обновляет график
+        /// </summary>
         public void Update()
         {
             double MaxValue = new double[] { Line_1_Source.Max(),
