@@ -17,7 +17,6 @@ namespace Evolution
 
         #region private параметры
         double energy;
-        int life = 0;
         bool alife = true;
         bool destroying = false;
         Random RND;
@@ -29,7 +28,7 @@ namespace Evolution
         /// <summary>
         /// Список генов для DNA
         /// </summary>
-        byte[] Genes = new byte[]
+        private readonly byte[] Genes = new byte[]
         { 
             // Базовые гены
             0x00, // - Пустой ген. Объект ничего не делает.
@@ -178,6 +177,8 @@ namespace Evolution
         /// Тип питания
         /// </summary>
         public byte Nutrition { get; protected set; }
+
+        public int Start { get; private set; }
         #endregion
 
         /// <summary>

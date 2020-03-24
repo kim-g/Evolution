@@ -82,7 +82,7 @@ namespace Evolution
         /// <summary>
         /// Количество логических ядер процессора.
         /// </summary>
-        private int Processors = Environment.ProcessorCount;
+        private readonly int Processors = Environment.ProcessorCount;
 
         private object Locked = new object();
 
@@ -253,8 +253,8 @@ namespace Evolution
             // Создание цветов энергий
             for (double i = 0; i < 6; i += 0.1)
             {
-                byte Red = 0;
-                byte Green = 0;
+                byte Red;
+                byte Green;
                 byte Blue = 0;
 
                 if (i < 3)
