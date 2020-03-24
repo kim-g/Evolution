@@ -63,20 +63,29 @@ namespace Evolution
         /// </summary>
         protected Rectangle[,] Rectangles;
 
+        /// <summary>
+        /// Карта, обозначающая изменённые клетки для отображения
+        /// </summary>
         protected bool[,] Changed;
 
         /// <summary>
-        /// Словарт цветов, обозначающих различные энергии.
+        /// Словарь цветов, обозначающих различные энергии.
         /// </summary>
         protected Dictionary<double, Brush> EnergyColors = new Dictionary<double, Brush>();
 
         /// <summary>
-        /// Словарт цветов, обозначающих различные типы питания.
+        /// Словарь цветов, обозначающих различные типы питания.
         /// </summary>
         protected Dictionary<byte, Brush> NutritionColors = new Dictionary<byte, Brush>();
 
+        /// <summary>
+        /// Кисть обводки
+        /// </summary>
         protected Brush Stroke = new SolidColorBrush(Colors.Black);
 
+        /// <summary>
+        /// Значение вероятности мутации
+        /// </summary>
         private double mutagen = 10;
 
         /// <summary>
@@ -84,8 +93,12 @@ namespace Evolution
         /// </summary>
         private readonly int Processors = Environment.ProcessorCount;
 
+        /// <summary>
+        /// Объект для синхронизации потоков
+        /// </summary>
         private object Locked = new object();
 
+        protected int _individualsID = 0;
         #endregion
 
         #region Внешние свойства
@@ -204,6 +217,16 @@ namespace Evolution
         /// </summary>
         public int Time { get; private set; } = 0;
 
+        /// <summary>
+        /// Максимальное значение энергии после шага
+        /// </summary>
+        public double MaximumEnergy { get; private set; } = 0;
+
+        /// <summary>
+        /// ID Номер для каждой новой особи
+        /// </summary>
+        public int IndividualsID => _individualsID++;
+
         #endregion
 
         #region Конструкторы
@@ -242,8 +265,10 @@ namespace Evolution
                     {
                         Width = double.NaN,
                         Height = double.NaN,
-                        StrokeThickness = 1
+                        StrokeThickness = 1,
+                        Tag = new IntPoint() {X = i, Y = j }
                     };
+                    Rectangles[i, j].MouseLeftButtonUp += OnIndividualClick;
                     Grid.SetColumn(Rectangles[i, j], i);
                     Grid.SetRow(Rectangles[i, j], j);
                     MainGrid.Children.Add(Rectangles[i, j]);
@@ -318,8 +343,10 @@ namespace Evolution
         /// <param name="Energy"></param>
         protected void ColorizeEnergy(Rectangle Rect, double Energy)
         {
+            double NormalEnergy = Energy / Math.Abs(MaximumEnergy) * 6;
+
             Rect.Stroke = Stroke;
-            if (Energy <= 0)
+            if (NormalEnergy <= 0)
             {
                 Rect.Fill = EnergyColors[-1];
                 return;
@@ -327,7 +354,7 @@ namespace Evolution
 
             for (double i = 0; i < 6; i += 0.1)
             {
-                if (Energy >= i && Energy < i + 0.1)
+                if (NormalEnergy >= i && NormalEnergy < i + 0.1)
                 {
                     Rect.Fill = EnergyColors[i];
                     return;
@@ -369,6 +396,14 @@ namespace Evolution
                     lock (Locked)
                         individuals[i].Step();
                 }
+        }
+
+        protected void OnIndividualClick(object sender, EventArgs e)
+        {
+            IntPoint MapPoint = (IntPoint)((FrameworkElement)sender).Tag;
+
+
+            Info.Source = Map[MapPoint.X, MapPoint.Y];
         }
         #endregion
 
@@ -453,6 +488,8 @@ namespace Evolution
         {
             Time++;
 
+
+
             int Block = Convert.ToInt32(Math.Ceiling((double)individuals.Count / Processors));
             Task[] Tasks = new Task[Processors];
             for (int i = 0; i < Processors; i++)
@@ -466,6 +503,8 @@ namespace Evolution
                 El.Step();*/
             AddAll();
             RemoveAll();
+
+            MaximumEnergy = individuals.Max(x => x.Energy);
 
             CountList.Add(individuals.Count);
             ProducerList.Add(ProducerCount);
